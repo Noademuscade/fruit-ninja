@@ -7,12 +7,13 @@ using namespace grapic;
 const int DIMW=500;
 const float FRICTION =0.6f;
 const int MAX =50;
+const int NFP = 5;
 
 /*Mon mini-projet est de réaliser le jeu Fruit-Ninja
 Fruit Ninja est un jeu ou des fruits sont lancés et ou le joueur doit les couper pour augmenter son score
 Si un fruit tombe mais n'est pas coupé, le joueur perd une vie
 Au bout de 3 vies il a perdu.*/
-
+char fruits_possibles[NFP]={'p','b','c','f','a'};
 
 //Vecteur
 struct Vec2
@@ -32,10 +33,8 @@ Vec2 operator+(Vec2 A,Vec2 B)
 }
 Vec2 operator+=(Vec2& A,Vec2 B)
 {
-    //printVec(A);
     A.x+=B.x;
     A.y+=B.y;
-    //printVec(A);
     return A;
 }
 Vec2 operator*(float a,Vec2 B)
@@ -64,16 +63,18 @@ struct Fruit
     Vec2 v;
     Vec2 f;
     float m;
-    Image im;
+    char id;
+    int etat;//0 fruit entier 1 fruit coupé gauche 2 fruit coupé droit
 };
 void fruitInit(Fruit &f)
 {
     f.p.x=frand(100,DIMW-100);
-    f.p.y=frand(0,100);
-    f.v.x=frand(-30.F,10.F);
+    f.p.y=frand(-50,0);
+    f.v.x=frand(-30.F,30.F);
     f.v.y=frand(50.F,100.F);
     f.m=1.0;
-    f.im=image("data/fruitninja/pomme.png");
+    f.id=fruits_possibles[rand()%NFP];
+    f.etat=0;
 }
 void fruitAddForce(Fruit &f,Vec2 force)
 {
@@ -81,7 +82,7 @@ void fruitAddForce(Fruit &f,Vec2 force)
 }
 void fruitUpdatePV(Fruit &f)
 {
-    float dt=0.001;
+    float dt=0.1;
     f.f.x=0;
     f.f.y=0;
     Vec2 g=make_vec(0,-9.81*f.m);
@@ -91,60 +92,57 @@ void fruitUpdatePV(Fruit &f)
 }
 void drawFruit(Fruit f)
 {
-    image_draw(f.im,f.p.x,f.p.y,-1,-1);
-}
-Fruit copyFruit(Fruit f)
-{
-    Fruit r;
-    r.p=f.p;
-    r.v=f.v;
-    r.f=f.f;
-    r.m=f.m;
-    r.im=f.im;
-
+    if (f.id == 'p')
+    {
+        if (f.etat==0)
+        {
+            Image im = image("data/fruitninja/pomme1.png");
+        }
+        else if (f.etat == 1)
+        {
+            Image im = image("data/fruitninja/pomme2.png");
+        }
+        else
+        {
+            Image im = image("data/fruitninja/pomme3.png");
+        }
+        image_draw(im,f.p.x,f.p.y,-1,-1);
+    }
+    else if (f.id == 'b')
+    {
+        Image im = image("data/fruitninja/banane1.png");
+        image_draw(im,f.p.x,f.p.y,-1,-1);
+    }
+    else if (f.id == 'f')
+    {
+        Image im = image("data/fruitninja/fraise1.png");
+        image_draw(im,f.p.x,f.p.y,-1,-1);
+    }
+    else if (f.id == 'c')
+    {
+        Image im = image("data/fruitninja/coco1.png");
+        image_draw(im,f.p.x,f.p.y,-1,-1);
+    }
+    else if (f.id == 'a')
+    {
+        Image im = image("data/fruitninja/ananas1.png");
+        image_draw(im,f.p.x,f.p.y,-1,-1);
+    }
 }
 //World
 
-struct World
+struct Jeu
 {
     Fruit liste_fruits[MAX];
     int score;
     int vies;
     int nb_fruits;
 };
-void worldInit(World &w)
-{
 
-    w.score=0;
-    w.vies=3;
-    w.nb_fruits=1;
-    Image imf1 = image("data/fruitninja/pomme.png");
-    Image tab_image[w.nb_fruits] = {imf1};
-    for (int i=0;i<w.nb_fruits;i++)
-    {
-        cout<<"oui"<<endl;
-        Fruit f;
-        fruitInit(f);
-        f.im=tab_image[i];
-        w.liste_fruits[i]=f;
-    }
-}
-void drawWorld(World w)
-{
-    fontSize(24);
-    color(255,255,100);
-    print(50,450,w.score);
-    color(255,0,0);
-    print(450,450,w.vies);
-}
 int main(int , char**)
 {
-    Image imf1 = image("data/fruitninja/pomme.png");
-    Image tab_image[w.nb_fruits] = {imf1};
 	winInit("vide",DIMW,DIMW);
 	backgroundColor(95,42,4);
-	World w;
-	worldInit(w);
 	Fruit f;
 	fruitInit(f);
 	Vec2 force = make_vec(0,5);
@@ -153,7 +151,6 @@ int main(int , char**)
 	while( !stop )
 	{
 		winClear();
-		drawWorld(w);
 		drawFruit(f);
 		fruitUpdatePV(f);
 		stop = winDisplay();
