@@ -110,22 +110,66 @@ void drawFruit(Fruit f)
     }
     else if (f.id == 'b')
     {
-        Image im = image("data/fruitninja/banane1.png");
+        if (f.etat==0)
+        {
+            Image im = image("data/fruitninja/banane1.png");
+        }
+        else if (f.etat == 1)
+        {
+            Image im = image("data/fruitninja/banane2.png");
+        }
+        else
+        {
+            Image im = image("data/fruitninja/banane3.png");
+        }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
     else if (f.id == 'f')
     {
-        Image im = image("data/fruitninja/fraise1.png");
+        if (f.etat==0)
+        {
+            Image im = image("data/fruitninja/fraise1.png");
+        }
+        else if (f.etat == 1)
+        {
+            Image im = image("data/fruitninja/fraise2.png");
+        }
+        else
+        {
+            Image im = image("data/fruitninja/fraise3.png");
+        }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
     else if (f.id == 'c')
     {
-        Image im = image("data/fruitninja/coco1.png");
+        if (f.etat==0)
+        {
+            Image im = image("data/fruitninja/coco1.png");
+        }
+        else if (f.etat == 1)
+        {
+            Image im = image("data/fruitninja/coco2.png");
+        }
+        else
+        {
+            Image im = image("data/fruitninja/coco3.png");
+        }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
     else if (f.id == 'a')
     {
-        Image im = image("data/fruitninja/ananas1.png");
+        if (f.etat==0)
+        {
+            Image im = image("data/fruitninja/ananas1.png");
+        }
+        else if (f.etat == 1)
+        {
+            Image im = image("data/fruitninja/ananas2.png");
+        }
+        else
+        {
+            Image im = image("data/fruitninja/ananas3.png");
+        }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
 }
