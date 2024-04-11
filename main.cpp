@@ -6,7 +6,7 @@ using namespace grapic;
 
 const int DIMW=500;
 const float FRICTION =0.6f;
-const int MAX =50;
+const int MAX =150;
 const int NFP = 5;
 
 /*Mon mini-projet est de réaliser le jeu Fruit-Ninja
@@ -92,19 +92,20 @@ void fruitUpdatePV(Fruit &f)
 }
 void drawFruit(Fruit f)
 {
+    Image im;
     if (f.id == 'p')
     {
         if (f.etat==0)
         {
-            Image im = image("data/fruitninja/pomme1.png");
+            im = image("data/fruitninja/pomme1.png");
         }
         else if (f.etat == 1)
         {
-            Image im = image("data/fruitninja/pomme2.png");
+            im = image("data/fruitninja/pomme2.png");
         }
         else
         {
-            Image im = image("data/fruitninja/pomme3.png");
+            im = image("data/fruitninja/pomme3.png");
         }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
@@ -112,15 +113,15 @@ void drawFruit(Fruit f)
     {
         if (f.etat==0)
         {
-            Image im = image("data/fruitninja/banane1.png");
+            im = image("data/fruitninja/banane1.png");
         }
         else if (f.etat == 1)
         {
-            Image im = image("data/fruitninja/banane2.png");
+            im = image("data/fruitninja/banane2.png");
         }
         else
         {
-            Image im = image("data/fruitninja/banane3.png");
+            im = image("data/fruitninja/banane3.png");
         }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
@@ -128,15 +129,15 @@ void drawFruit(Fruit f)
     {
         if (f.etat==0)
         {
-            Image im = image("data/fruitninja/fraise1.png");
+            im = image("data/fruitninja/fraise1.png");
         }
         else if (f.etat == 1)
         {
-            Image im = image("data/fruitninja/fraise2.png");
+            im = image("data/fruitninja/fraise2.png");
         }
         else
         {
-            Image im = image("data/fruitninja/fraise3.png");
+            im = image("data/fruitninja/fraise3.png");
         }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
@@ -144,15 +145,15 @@ void drawFruit(Fruit f)
     {
         if (f.etat==0)
         {
-            Image im = image("data/fruitninja/coco1.png");
+            im = image("data/fruitninja/coco1.png");
         }
         else if (f.etat == 1)
         {
-            Image im = image("data/fruitninja/coco2.png");
+            im = image("data/fruitninja/coco2.png");
         }
         else
         {
-            Image im = image("data/fruitninja/coco3.png");
+            im = image("data/fruitninja/coco3.png");
         }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
@@ -160,47 +161,110 @@ void drawFruit(Fruit f)
     {
         if (f.etat==0)
         {
-            Image im = image("data/fruitninja/ananas1.png");
+            im = image("data/fruitninja/ananas1.png");
         }
         else if (f.etat == 1)
         {
-            Image im = image("data/fruitninja/ananas2.png");
+            im = image("data/fruitninja/ananas2.png");
         }
         else
         {
-            Image im = image("data/fruitninja/ananas3.png");
+            im = image("data/fruitninja/ananas3.png");
         }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
 }
-void cutFruit(Fruit &f)
+Fruit copyFruit(Fruit f)
 {
-	
+    Fruit r;
+    r.p.x=f.p.x;
+    r.p.y=f.p.y;
+    r.v.x=f.v.x;
+    r.v.y=f.v.y;
+    r.m=f.m;
+    r.id=f.id;
+    r.etat=f.etat;
+    return r;
 }
-//World
 
-struct Jeu
+void cutFruit(Fruit &fg)
+{
+    Fruit fd=copyFruit(fg);
+    fg.etat=1;
+    fd.etat=2;
+    fg.v.x=-10;
+    fg.v.y=5;
+    fd.v.x=-10;
+    fd.v.y=5;
+    Vec2 chute = make_vec(-50,10);
+    fruitAddForce(fg,chute);
+    fruitAddForce(fd,chute);
+    // a compléter apr world fini
+}
+//Jeu
+
+struct World
 {
     Fruit liste_fruits[MAX];
     int score;
     int vies;
     int nb_fruits;
 };
+void addFruitToWorld(World &w,Fruit f)
+{
+    w.liste_fruits[w.nb_fruits]=f;
+    w.nb_fruits++;
+}
+void initWorld(World &w)
+{
+    w.score=0;
+    w.vies=3;
+    w.nb_fruits=(rand()%5)+1;
+    for (int i=0;i<w.nb_fruits;i++)
+    {
+        Fruit f;
+        fruitInit(f);
+        w.liste_fruits[i]=f;
+    }
+}
+void updateWorld(World &w)
+{
+    for (int i=0;i<w.nb_fruits;i++)
+    {
+        fruitUpdatePV(w.liste_fruits[i]);
+    }
+    //doit supprimer un fruit si celui-ci sort de la fenêtre
+    //Si il est coupé le score augmente sinon il perd une vie
+}
 
+void drawWorld(World w)
+{
+    int mx,my;
+    mousePos(mx,my);
+    color(255,255,255);
+    circleFill(mx,my,5);
+    fontSize(24);
+    color(255,211,0);
+    print(DIMW-30,DIMW-30,w.score);
+    color(255,0,0);
+    print(20,DIMW-30,w.vies);
+    for (int i =0 ;i<w.nb_fruits;i++)
+    {
+        drawFruit(w.liste_fruits[i]);
+    }
+}
 int main(int , char**)
 {
 	winInit("vide",DIMW,DIMW);
 	backgroundColor(95,42,4);
-	Fruit f;
-	fruitInit(f);
-	Vec2 force = make_vec(0,5);
-	fruitAddForce(f,force);
+	World w;
+	initWorld(w);
 	bool stop = false;
 	while( !stop )
 	{
 		winClear();
-		drawFruit(f);
-		fruitUpdatePV(f);
+		drawWorld(w);
+		updateWorld(w);
 		stop = winDisplay();
 	}
 	winQuit();
