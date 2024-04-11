@@ -44,6 +44,14 @@ Vec2 operator*(float a,Vec2 B)
     r.y=a*B.y;
     return r;
 }
+bool operator==(Vec2 a,Vec2 b)
+{
+    if((a.x==b.x)&&(a.y==b.y))
+    {
+        return true;
+    }
+    return false;
+}
 Vec2 make_vec(float x,float y)
 {
     Vec2 r;
@@ -82,7 +90,7 @@ void fruitAddForce(Fruit &f,Vec2 force)
 }
 void fruitUpdatePV(Fruit &f)
 {
-    float dt=0.1;
+    float dt=0.001;
     f.f.x=0;
     f.f.y=0;
     Vec2 g=make_vec(0,-9.81*f.m);
@@ -187,20 +195,7 @@ Fruit copyFruit(Fruit f)
     return r;
 }
 
-void cutFruit(Fruit &fg)
-{
-    Fruit fd=copyFruit(fg);
-    fg.etat=1;
-    fd.etat=2;
-    fg.v.x=-10;
-    fg.v.y=5;
-    fd.v.x=-10;
-    fd.v.y=5;
-    Vec2 chute = make_vec(-50,10);
-    fruitAddForce(fg,chute);
-    fruitAddForce(fd,chute);
-    // a compléter apr world fini
-}
+
 //Jeu
 
 struct World
@@ -214,6 +209,27 @@ void addFruitToWorld(World &w,Fruit f)
 {
     w.liste_fruits[w.nb_fruits]=f;
     w.nb_fruits++;
+}
+void cutFruitInWorld(World &w,Fruit &fg)
+{
+    if (fg.etat==0)
+    {
+        Fruit fd=copyFruit(fg);
+        fg.etat=1;
+        fd.etat=2;
+        fg.v.x=-10;
+        fg.v.y=10;
+        fd.p.x=fg.p.x+30;
+        fd.v.x=10;
+        fd.v.y=10;
+        Vec2 chg = make_vec(-50,30);
+        Vec2 chd = make_vec(50,30);
+        fruitAddForce(fg,chg);
+        fruitAddForce(fd,chd);
+        addFruitToWorld(w,fd);
+    }
+
+    // a compléter apr world fini
 }
 void initWorld(World &w)
 {
@@ -229,10 +245,22 @@ void initWorld(World &w)
 }
 void updateWorld(World &w)
 {
+    int mx,my;
+
     for (int i=0;i<w.nb_fruits;i++)
     {
+        mousePos(mx,my);
         fruitUpdatePV(w.liste_fruits[i]);
+        cout<<w.liste_fruits[i].p.x<<"    "<<mx<<endl;
+        if ((w.liste_fruits[i].p.x==mx) && (w.liste_fruits[i].p.y==my))
+        {
+            winQuit();
+            //cutFruitInWorld(w,w.liste_fruits[i]);
+            cutFruitInWorld(w,w.liste_fruits[0]);
+            w.score++;
+        }
     }
+    //A CORRIGER
     //doit supprimer un fruit si celui-ci sort de la fenêtre
     //Si il est coupé le score augmente sinon il perd une vie
 }
@@ -265,6 +293,10 @@ int main(int , char**)
 		winClear();
 		drawWorld(w);
 		updateWorld(w);
+		if (isMousePressed(SDL_BUTTON_LEFT))
+        {
+            cutFruitInWorld(w,w.liste_fruits[0]);
+        }
 		stop = winDisplay();
 	}
 	winQuit();
