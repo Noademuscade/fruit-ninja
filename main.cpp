@@ -173,6 +173,10 @@ void drawFruit(Fruit f)
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
 }
+void cutFruit(Fruit &f)
+{
+	
+}
 //World
 
 struct Jeu
