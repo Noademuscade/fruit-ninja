@@ -1,5 +1,9 @@
 #include <iostream>
 #include <Grapic.h>
+#include <time.h>
+#include <windows.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 using namespace std;
 using namespace grapic;
@@ -7,13 +11,20 @@ using namespace grapic;
 const int DIMW=500;
 const float FRICTION =0.6f;
 const int MAX =150;
-const int NFP = 5;
+const int NFP = 6;
 
 /*Mon mini-projet est de réaliser le jeu Fruit-Ninja
 Fruit Ninja est un jeu ou des fruits sont lancés et ou le joueur doit les couper pour augmenter son score
 Si un fruit tombe mais n'est pas coupé, le joueur perd une vie
-Au bout de 3 vies il a perdu.*/
-char fruits_possibles[NFP]={'p','b','c','f','a'};
+Au bout de 3 vies il a perdu.
+
+COMPTE-RENDU 12/04
+J'ai implanté quasiment toutes les fonctions principales nécessaires au fonctionnement du jeu
+Le jeu s'affiche , a un menu et on peux jouer (quelques détails à paufiner sur les trajectoires des fruits et leur vitesse)
+La semaine prochaine, je compte finaliser toutes les fonctions principales et entamer l'ajout de mécanique en plus comme une difficulté crescendo et de nouveaux fruits spéciaux etc
+Je vous mets ci-joint un lien Github pour accéder au zip avec les images nécessaires (je n'utilise pas souvent github mais j'ai essayé pour prendre l'habitude)
+https://github.com/Noademuscade/fruit-ninja*/
+char fruits_possibles[NFP]={'p','b','c','f','a','x'};
 
 //Vecteur
 struct Vec2
@@ -72,13 +83,13 @@ struct Fruit
     Vec2 f;
     float m;
     char id;
-    int etat;//0 fruit entier 1 fruit coupé gauche 2 fruit coupé droit
+    int etat;//0 fruit entier 1 fruit coupé gauche 2 fruit coupé droit 3 fruit supprimé / plus traité #### si fruit = bombe : 0 entier 1 explosé
 };
 void fruitInit(Fruit &f)
 {
     f.p.x=frand(100,DIMW-100);
     f.p.y=frand(-50,0);
-    f.v.x=frand(-30.F,30.F);
+    f.v.x=frand(-20.F,20.F);
     f.v.y=frand(50.F,100.F);
     f.m=1.0;
     f.id=fruits_possibles[rand()%NFP];
@@ -90,7 +101,7 @@ void fruitAddForce(Fruit &f,Vec2 force)
 }
 void fruitUpdatePV(Fruit &f)
 {
-    float dt=0.001;
+    float dt=0.2;
     f.f.x=0;
     f.f.y=0;
     Vec2 g=make_vec(0,-9.81*f.m);
@@ -111,7 +122,7 @@ void drawFruit(Fruit f)
         {
             im = image("data/fruitninja/pomme2.png");
         }
-        else
+        else if (f.etat == 2)
         {
             im = image("data/fruitninja/pomme3.png");
         }
@@ -127,7 +138,7 @@ void drawFruit(Fruit f)
         {
             im = image("data/fruitninja/banane2.png");
         }
-        else
+        else if (f.etat == 2)
         {
             im = image("data/fruitninja/banane3.png");
         }
@@ -143,7 +154,7 @@ void drawFruit(Fruit f)
         {
             im = image("data/fruitninja/fraise2.png");
         }
-        else
+        else if (f.etat == 2)
         {
             im = image("data/fruitninja/fraise3.png");
         }
@@ -159,7 +170,7 @@ void drawFruit(Fruit f)
         {
             im = image("data/fruitninja/coco2.png");
         }
-        else
+        else if (f.etat == 2)
         {
             im = image("data/fruitninja/coco3.png");
         }
@@ -175,9 +186,21 @@ void drawFruit(Fruit f)
         {
             im = image("data/fruitninja/ananas2.png");
         }
-        else
+        else if (f.etat == 2)
         {
             im = image("data/fruitninja/ananas3.png");
+        }
+        image_draw(im,f.p.x,f.p.y,-1,-1);
+    }
+    else if (f.id =='x')
+    {
+        if (f.etat==0)
+        {
+            im=image("data/fruitninja/bomb1.png");
+        }
+        else
+        {
+            im=image("data/fruitninja/bomb2.png");
         }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
@@ -195,7 +218,6 @@ Fruit copyFruit(Fruit f)
     return r;
 }
 
-
 //Jeu
 
 struct World
@@ -212,24 +234,45 @@ void addFruitToWorld(World &w,Fruit f)
 }
 void cutFruitInWorld(World &w,Fruit &fg)
 {
-    if (fg.etat==0)
+    if (fg.etat==0 && fg.id != 'x')
     {
         Fruit fd=copyFruit(fg);
         fg.etat=1;
         fd.etat=2;
         fg.v.x=-10;
         fg.v.y=10;
-        fd.p.x=fg.p.x+30;
+        fd.p.x=fg.p.x+50;
         fd.v.x=10;
         fd.v.y=10;
+        fg.m=1.5;
+        fd.m=1.5;
         Vec2 chg = make_vec(-50,30);
         Vec2 chd = make_vec(50,30);
         fruitAddForce(fg,chg);
         fruitAddForce(fd,chd);
         addFruitToWorld(w,fd);
     }
-
-    // a compléter apr world fini
+}
+bool fruitWaveDone(World w)
+{
+    for (int i =0;i<w.nb_fruits;i++)
+    {
+        if (w.liste_fruits[i].etat !=3)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+void createFruitWave(World &w)
+{
+    int waveSize=(rand()%6)-1;
+    for(int i = 0;i<waveSize;i++)
+    {
+        Fruit f;
+        fruitInit(f);
+        addFruitToWorld(w,f);
+    }
 }
 void initWorld(World &w)
 {
@@ -243,27 +286,7 @@ void initWorld(World &w)
         w.liste_fruits[i]=f;
     }
 }
-void updateWorld(World &w)
-{
-    int mx,my;
 
-    for (int i=0;i<w.nb_fruits;i++)
-    {
-        mousePos(mx,my);
-        fruitUpdatePV(w.liste_fruits[i]);
-        cout<<w.liste_fruits[i].p.x<<"    "<<mx<<endl;
-        if ((w.liste_fruits[i].p.x==mx) && (w.liste_fruits[i].p.y==my))
-        {
-            winQuit();
-            //cutFruitInWorld(w,w.liste_fruits[i]);
-            cutFruitInWorld(w,w.liste_fruits[0]);
-            w.score++;
-        }
-    }
-    //A CORRIGER
-    //doit supprimer un fruit si celui-ci sort de la fenêtre
-    //Si il est coupé le score augmente sinon il perd une vie
-}
 
 void drawWorld(World w)
 {
@@ -278,7 +301,75 @@ void drawWorld(World w)
     print(20,DIMW-30,w.vies);
     for (int i =0 ;i<w.nb_fruits;i++)
     {
-        drawFruit(w.liste_fruits[i]);
+        if (w.liste_fruits[i].etat!=3)
+        {
+            drawFruit(w.liste_fruits[i]);
+        }
+    }
+}
+void updateWorld(World &w)
+{
+    if (w.vies >0)
+    {
+        int mx,my;
+        for (int i=0;i<w.nb_fruits;i++)
+        {
+            if (w.liste_fruits[i].etat != 3)
+            {
+                mousePos(mx,my);
+                fruitUpdatePV(w.liste_fruits[i]);
+                if ((w.liste_fruits[i].p.x>=mx-60) && (w.liste_fruits[i].p.x<=mx+60) &&(w.liste_fruits[i].p.y>=my-60)&&(w.liste_fruits[i].p.y<=my+60) && (w.liste_fruits[i].etat==0))
+                {
+                    if (w.liste_fruits[i].id!='x')
+                    {
+                        cutFruitInWorld(w,w.liste_fruits[i]);
+                        w.score++;
+                    }
+                    else
+                    {
+                        w.liste_fruits[i].etat=1;
+                        drawWorld(w);
+                        w.vies =0;
+                    }
+
+                }
+                if(w.liste_fruits[i].etat==0 && w.liste_fruits[i].p.y<-50 && w.liste_fruits[i].id !='x')
+                {
+                    w.liste_fruits[i].etat=3;
+                    w.vies--;
+                }
+                if((w.liste_fruits[i].etat!=0 || w.liste_fruits[i].id == 'x') && w.liste_fruits[i].p.y<-50)
+                {
+                    w.liste_fruits[i].etat=3;
+                }
+            }
+        }
+    }
+
+    //doit supprimer un fruit si celui-ci sort de la fenêtre
+    //Si il est coupé le score augmente sinon il perd une vie
+}
+void endWorld(World &w)
+{
+    fontSize(60);
+    color(255,0,0);
+    print(150,300,"PERDU");
+    rectangleFill(150,150,350,100);
+    color(255,211,0);
+    rectangleFill(150,250,350,200);
+    color(0,0,0);
+    fontSize(24);
+    print(200,212,"REJOUER");
+    print(200,112,"QUITTER");
+    int mx,my;
+    mousePos(mx,my);
+    if (isMousePressed(SDL_BUTTON_LEFT) && mx<=350 && mx>=150 && my<=150 && my>=100 )
+    {
+        winQuit();
+    }
+    if (isMousePressed(SDL_BUTTON_LEFT) && mx<=350 && mx>=150 && my<=250 && my>=200 )
+    {
+        initWorld(w);
     }
 }
 int main(int , char**)
@@ -293,10 +384,15 @@ int main(int , char**)
 		winClear();
 		drawWorld(w);
 		updateWorld(w);
-		if (isMousePressed(SDL_BUTTON_LEFT))
+		if(fruitWaveDone(w)&& w.vies > 0)
         {
-            cutFruitInWorld(w,w.liste_fruits[0]);
+            createFruitWave(w);
         }
+        if(w.vies <= 0)
+        {
+            endWorld(w);
+        }
+
 		stop = winDisplay();
 	}
 	winQuit();
