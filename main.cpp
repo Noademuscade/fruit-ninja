@@ -11,7 +11,7 @@ using namespace grapic;
 const int DIMW=500;
 const float FRICTION =0.6f;
 const int MAX =150;
-const int NFP = 6;
+const int NFP = 8;
 
 
 /*Mon mini-projet est de réaliser le jeu Fruit-Ninja
@@ -25,7 +25,11 @@ Le jeu s'affiche , a un menu et on peux jouer (quelques détails à paufiner sur
 La semaine prochaine, je compte finaliser toutes les fonctions principales et entamer l'ajout de mécanique en plus comme une difficulté crescendo et de nouveaux fruits spéciaux etc
 Je vous mets ci-joint un lien Github pour accéder au zip avec les images nécessaires (je n'utilise pas souvent github mais j'ai essayé pour prendre l'habitude)
 https://github.com/Noademuscade/fruit-ninja*/
-char fruits_possibles[NFP]={'p','b','c','f','a','x'};
+
+
+// idée fruit bonus/malus : un fruit qui quand on le coupe se transforme en 5 fruits qui "explose" / un fruit qui change la gravité (gravité lunaire)
+
+char fruits_possibles[NFP]={'p','b','c','f','a','x','g','l'};
 
 //Vecteur
 struct Vec2
@@ -71,7 +75,7 @@ Vec2 make_vec(float x,float y)
     r.y=y;
     return r;
 }
-
+const Vec2 G = make_vec(0,-9.81);
 float norm(Vec2 a)
 {
     return sqrt(a.x*a.x+a.y*a.y);
@@ -113,6 +117,18 @@ void importImages(Image tab[MAX])
     x1 = image("data/fruitninja/bomb1.png");
     Image x2;
     x2 = image("data/fruitninja/bomb2.png");
+    Image g1;
+    g1 = image("data/fruitninja/grenade1.png");
+    Image g2;
+    g2 = image("data/fruitninja/grenade2.png");
+    Image g3;
+    g3 = image("data/fruitninja/grenade3.png");
+    Image l1;
+    l1 = image("data/fruitninja/fruitlune1.png");
+    Image l2;
+    l2 = image("data/fruitninja/fruitlune2.png");
+    Image l3;
+    l3 = image("data/fruitninja/fruitlune3.png");
     tab[0] = p1;
     tab[1] = p2;
     tab[2] = p3;
@@ -130,6 +146,12 @@ void importImages(Image tab[MAX])
     tab[14] = a3;
     tab[15] = x1;
     tab[16] = x2;
+    tab[17] = g1;
+    tab[18] = g2;
+    tab[19] = g3;
+    tab[20] = l1;
+    tab[21] = l2;
+    tab[22] = l3;
 }
 //Fruit
 struct Fruit
@@ -151,16 +173,25 @@ void fruitInit(Fruit &f)
     f.id=fruits_possibles[rand()%NFP];
     f.etat=0;
 }
+void fruitInitEx(Fruit &f,Fruit g)
+{
+    f.p.x=g.p.x;
+    f.p.y=g.p.y;
+    f.v.x=frand(-50.F,50.F);
+    f.v.y=frand(20.F,30.F);
+    f.m=1.0;
+    f.id=fruits_possibles[rand()%(NFP-3)];
+    f.etat=0;
+}
 void fruitAddForce(Fruit &f,Vec2 force)
 {
     f.f+=force;
 }
-void fruitUpdatePV(Fruit &f)
+void fruitUpdatePV(Fruit &f,Vec2 g)
 {
-    float dt=0.02;
+    float dt=0.01;
     f.f.x=0;
     f.f.y=0;
-    Vec2 g=make_vec(0,-9.81*f.m);
     fruitAddForce(f,g);
     f.v+=dt*(1/f.m)*f.f;
     f.p+=dt*f.v;
@@ -188,6 +219,7 @@ struct World
     int score;
     int vies;
     int nb_fruits;
+    bool inGame;
 };
 void addFruitToWorld(World &w,Fruit f)
 {
@@ -203,7 +235,7 @@ void cutFruitInWorld(World &w,Fruit &fg)
         fd.etat=2;
         fg.v.x=-10;
         fg.v.y=10;
-        fd.p.x=fg.p.x+75;
+        fd.p.x=fg.p.x+60;
         fd.v.x=10;
         fd.v.y=10;
         fg.m=1.5;
@@ -310,6 +342,38 @@ void drawFruitInWorld(World w,Fruit f)
         }
         image_draw(im,f.p.x,f.p.y,-1,-1);
     }
+    else if (f.id == 'g')
+    {
+        if (f.etat==0)
+        {
+            im = w.tab_images[17];
+        }
+        else if (f.etat == 1)
+        {
+            im = w.tab_images[18];
+        }
+        else if (f.etat == 2)
+        {
+            im = w.tab_images[19];
+        }
+        image_draw(im,f.p.x,f.p.y,-1,-1);
+    }
+    else if (f.id == 'l')
+    {
+        if (f.etat==0)
+        {
+            im = w.tab_images[20];
+        }
+        else if (f.etat == 1)
+        {
+            im = w.tab_images[21];
+        }
+        else if (f.etat == 2)
+        {
+            im = w.tab_images[22];
+        }
+        image_draw(im,f.p.x,f.p.y,-1,-1);
+    }
 }
 bool fruitWaveDone(World w)
 {
@@ -332,6 +396,15 @@ void createFruitWave(World &w)
         addFruitToWorld(w,f);
     }
 }
+void explodeGrenadeInWorld(Fruit g,World &w)
+{
+    for(int i = 0;i<5;i++)
+    {
+        Fruit f;
+        fruitInitEx(f,g);
+        addFruitToWorld(w,f);
+    }
+}
 void initWorld(World &w)
 {
     importImages(w.tab_images);
@@ -344,7 +417,7 @@ void initWorld(World &w)
         fruitInit(f);
         w.liste_fruits[i]=f;
     }
-
+    w.inGame=false;
 }
 void drawWorld(World w)
 {
@@ -375,14 +448,19 @@ void updateWorld(World &w)
             if (w.liste_fruits[i].etat != 3)
             {
                 mousePos(mx,my);
-                fruitUpdatePV(w.liste_fruits[i]);
+                fruitUpdatePV(w.liste_fruits[i],G);
                 if ((w.liste_fruits[i].p.x>=mx-60) && (w.liste_fruits[i].p.x<=mx+60) &&(w.liste_fruits[i].p.y>=my-60)&&(w.liste_fruits[i].p.y<=my+60) && (w.liste_fruits[i].etat==0))
                 {
+                    /*if(w.liste_fruits[i].id=='g')
+                    {
+                        explodeGrenadeInWorld(w.liste_fruits[i],w);
+                    }*/
                     if (w.liste_fruits[i].id!='x')
                     {
                         cutFruitInWorld(w,w.liste_fruits[i]);
                         w.score++;
                     }
+
                     else
                     {
                         w.liste_fruits[i].etat=1;
@@ -393,8 +471,16 @@ void updateWorld(World &w)
                 }
                 if(w.liste_fruits[i].etat==0 && w.liste_fruits[i].p.y<-50 && w.liste_fruits[i].id !='x')
                 {
-                    w.liste_fruits[i].etat=3;
-                    w.vies--;
+                    if (w.liste_fruits[i].p.x>=0 && w.liste_fruits[i].p.x<=DIMW)
+                    {
+                        w.liste_fruits[i].etat=3;
+                        w.vies--;
+                    }
+                    else
+                    {
+                        w.liste_fruits[i].etat=3;
+                    }
+
                 }
                 if((w.liste_fruits[i].etat!=0 || w.liste_fruits[i].id == 'x') && w.liste_fruits[i].p.y<-50)
                 {
@@ -403,9 +489,18 @@ void updateWorld(World &w)
             }
         }
     }
-
-    //doit supprimer un fruit si celui-ci sort de la fenêtre
-    //Si il est coupé le score augmente sinon il perd une vie
+}
+void startingMenu(World &w)
+{
+    fontSize(60);
+    color(255,210,0);
+    print(73,300,"FRUIT NINJA");
+    fontSize(30);
+    print(130,200,"Cliquez pour jouez");
+    if (isMousePressed(SDL_BUTTON_LEFT))
+    {
+        w.inGame=true;
+    }
 }
 void endWorld(World &w)
 {
@@ -428,30 +523,41 @@ void endWorld(World &w)
     if (isMousePressed(SDL_BUTTON_LEFT) && mx<=350 && mx>=150 && my<=250 && my>=200 )
     {
         initWorld(w);
+        w.inGame=true;
     }
 }
 int main(int , char**)
 {
 	winInit("vide",DIMW,DIMW);
-	backgroundColor(95,42,4);
+	backgroundColor(162,42,42);
+	//Image background = image("data/fruitninja/bg.jpg");
+	//image_draw(background,0,0,DIMW,DIMW);
 	World w;
 	initWorld(w);
 	bool stop = false;
 	while( !stop )
 	{
-		winClear();
-		drawWorld(w);
-		updateWorld(w);
-		if(fruitWaveDone(w)&& w.vies > 0)
+	    winClear();
+	    if(w.inGame)
         {
-            createFruitWave(w);
-        }
-        if(w.vies <= 0)
-        {
-            endWorld(w);
-        }
 
-		stop = winDisplay();
+            drawWorld(w);
+            updateWorld(w);
+            if(fruitWaveDone(w)&& w.vies > 0)
+            {
+                createFruitWave(w);
+            }
+            if(w.vies <= 0)
+            {
+                winClear();
+                endWorld(w);
+            }
+        }
+        else
+        {
+            startingMenu(w);
+        }
+        stop = winDisplay();
 	}
 	winQuit();
 	return 0;
